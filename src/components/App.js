@@ -141,7 +141,8 @@ export default class App extends Component {
   render() {
     return (
       <div className="calc-container">
-        <p className="description" > <br/><br/>Calculator</p>
+        <div className="close-calculator"><a href="" className="close" onclick="toggleCalculator();">&times;</a></div>
+        
         <Screen
           log={this.state.log}
           result={this.state.result}
