@@ -14,6 +14,7 @@ export default class App extends Component {
       log: '',
       clickedEquals: false,
       ans: 0,
+      operands : []
     };
     this.handleLogChange = this.handleLogChange.bind(this);
     this.keyClick = this.keyClick.bind(this);
@@ -21,7 +22,10 @@ export default class App extends Component {
 
     // handle kyobard exeptions
   componentDidMount() {
-    window.onerror = () => this.setState({ log: 'Syntax Error', clickedEquals: true });
+    window.onerror = () => {
+      this.setState({ log: 'Syntax Error', clickedEquals: true });
+      return true;
+    }
     window.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         this.handleEqualsClick(this.state.log);
@@ -52,8 +56,9 @@ export default class App extends Component {
   keyClick(keyLog, math) {
     const currentLog = this.state.log;
     const clickedEquals = this.state.clickedEquals;
+    const multiply =  he.decode('&times;');
     if (math === 'clear') {
-      this.setState({ log: '', result: 0 });
+      this.setState({ log: '', result: 0, operands: [] });
     }
 
     if (math === 'delete') {
@@ -68,7 +73,20 @@ export default class App extends Component {
       this.handleEqualsClick(currentLog);
     }
 
-    if (math.match(/trig|log|number|comma|prnths|ans|sqrt|exponent/)) {
+    if(math.match(/pi/)){
+      const lastChar = currentLog.substr(currentLog.length - 1);
+      console.log("encoded "+'&#x3A0;' === he.encode(lastChar));
+      console.log('currentLog ' + currentLog)
+      const updatedKeyLog =  lastChar.match(/[0-9]/) || keyLog=== 'Ans' || '&#x3A0;' === he.encode(lastChar)? multiply+keyLog : keyLog ;
+      if (clickedEquals) this.setState({ log: `Ans${updatedKeyLog}`, clickedEquals: false });
+      else this.setState({ log: currentLog + updatedKeyLog });
+    }
+    
+    if(math.match(/number/) && this.state.operands[this.state.operands.length - 1] === 'pi'){
+      const updatedKeyLog = multiply+keyLog; 
+      if (clickedEquals) this.setState({ log: `Ans${updatedKeyLog}`, clickedEquals: false });
+      else this.setState({ log: currentLog + updatedKeyLog });
+    }else if (math.match(/trig|log|number|comma|prnths|ans|sqrt|exponent/)) {
       if (clickedEquals) this.setState({ log: keyLog, clickedEquals: false });
       else this.setState({ log: currentLog + keyLog });
     }
@@ -77,16 +95,22 @@ export default class App extends Component {
       if (clickedEquals) this.setState({ log: `Ans${keyLog}`, clickedEquals: false });
       else this.setState({ log: currentLog + keyLog });
     }
+
+    if(math.match(/sum|sub|multiply|divide|power|sqr|inv|trig|log|comma|prnths|ans|sqrt|exponent|pi/)){
+      this.setState({operands : this.state.operands.concat(math)})
+    }
   }
 
   handleEqualsClick(currentLog) {
     const times = he.decode('&#x000D7;');
     const divide = he.decode('&divide;');
     const sqrt = he.decode('&radic;');
+    const pi = he.decode('&Pi;');
     const sqrtReg = new RegExp(sqrt, 'g');
 
     // change log so it's understanable to mathjs eval() method
     const newLog = currentLog.replace(times, '*')
+    .replace(pi, '3.14159')
     .replace(divide, '/')
     .replace(/Ans/g, `(${this.state.ans.toString()})`)
     .replace(/E/g, '10^')
@@ -95,6 +119,7 @@ export default class App extends Component {
     .replace(sqrtReg, 'sqrt');
 
     let result = math.eval(newLog);
+    
     let finalResult;
 
     if (currentLog === '') {
@@ -116,8 +141,8 @@ export default class App extends Component {
   render() {
     return (
       <div className="calc-container">
-        <p className="description" >Pasio <br/><br/>
-          unleash the mathematician within</p>
+        <div className="close-calculator"><a href="" className="close" onclick="toggleCalculator();">&times;</a></div>
+        
         <Screen
           log={this.state.log}
           result={this.state.result}
